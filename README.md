@@ -1,1 +1,1 @@
-# kindle-spotify
+# kindle-controller
