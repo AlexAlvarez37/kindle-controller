@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kindle Spotify — Pair</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@300;400;600&display=swap');
+
+  :root {
+    --ink: #111110;
+    --ink-mid: #444440;
+    --ink-soft: #88887f;
+    --paper: #f5f1e8;
+    --paper-2: #ede8dc;
+    --paper-3: #e0d9cc;
+    --rule: #c8c2b4;
+    --green: #1DB954;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+  }
+
+  .screen { display: none; flex-direction: column; align-items: center; gap: 24px; width: 100%; max-width: 440px; text-align: center; }
+  .screen.active { display: flex; }
+
+  /* ── SHARED ── */
+  .eyebrow {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .sub {
+    font-size: 14px;
+    color: var(--ink-mid);
+    font-style: italic;
+    line-height: 1.7;
+  }
+
+  .divider { width: 40px; height: 2px; background: var(--ink); }
+
+  .box {
+    width: 100%;
+    border: 2px solid var(--ink);
+    padding: 24px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .box h3 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+  }
+
+  .field label {
+    display: block;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .field input {
+    width: 100%;
+    border: 1.5px solid var(--rule);
+    background: var(--paper);
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: 'Libre Baskerville', serif;
+    color: var(--ink);
+    outline: none;
+  }
+
+  .field input:focus { border-color: var(--ink); }
+  .field input::placeholder { color: var(--ink-soft); opacity: 0.5; }
+
+  .btn {
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 14px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    transition: opacity 0.12s;
+  }
+
+  .btn:hover { opacity: 0.85; }
+
+  .note {
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-style: italic;
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  .err {
+    color: #8B0000;
+    font-size: 12px;
+    font-style: italic;
+    text-align: center;
+  }
+
+  /* ── PAIRING SCREEN ── */
+  .code-badge {
+    border: 2px solid var(--ink);
+    padding: 12px 28px;
+    display: inline-block;
+  }
+
+  .code-val {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 6px;
+  }
+
+  /* ── CONNECTED SCREEN ── */
+  #screen-connected {
+    justify-content: flex-start;
+    padding-top: 12px;
+    gap: 16px;
+  }
+
+  .now-playing-card {
+    width: 100%;
+    border: 2px solid var(--ink);
+    overflow: hidden;
+  }
+
+  .np-art {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 200px;
+    background: var(--paper-2);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    opacity: 0.2;
+  }
+
+  .np-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .np-info {
+    padding: 16px;
+    border-top: 2px solid var(--ink);
+  }
+
+  .np-lbl {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .np-name {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 5px;
+  }
+
+  .np-artist {
+    font-size: 13px;
+    color: var(--ink-mid);
+  }
+
+  /* Progress */
+  .prog-wrap { padding: 0 16px 16px; }
+  .prog-bg { width: 100%; height: 2px; background: var(--paper-3); margin-bottom: 5px; }
+  .prog-fill { height: 100%; background: var(--ink); transition: width 1s linear; }
+  .prog-times { display: flex; justify-content: space-between; }
+  .prog-time {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--ink-soft);
+  }
+
+  /* Controls */
+  .ctrl-row {
+    width: 100%;
+    display: flex;
+    border: 2px solid var(--ink);
+    margin-top: -2px;
+  }
+
+  .pb-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    border-right: 1.5px solid var(--rule);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 14px 8px;
+    color: var(--ink);
+    transition: background 0.1s;
+  }
+
+  .pb-btn:last-child { border-right: none; }
+  .pb-btn:active { background: var(--paper-2); }
+
+  .pb-btn svg {
+    width: 24px; height: 24px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pb-btn.play-btn svg { width: 40px; height: 40px; }
+
+  .pb-lbl {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .mode-row {
+    width: 100%;
+    display: flex;
+    border: 2px solid var(--ink);
+    border-top: none;
+  }
+
+  .mode-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    border-right: 1.5px solid var(--rule);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 8px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    transition: all 0.12s;
+  }
+
+  .mode-btn:last-child { border-right: none; }
+
+  .mode-btn svg {
+    width: 13px; height: 13px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .mode-btn.on { background: var(--ink); color: var(--paper); }
+
+  .kindle-status {
+    width: 100%;
+    background: var(--paper-2);
+    border: 1.5px solid var(--rule);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ks-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  .ks-text {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div id="screen-setup" class="screen active">
+  <div class="eyebrow">Kindle Spotify</div>
+  <div class="title">Phone Setup</div>
+  <div class="divider"></div>
+  <p class="sub">Enter your Spotify app credentials and JSONBin key to pair with your Kindle.</p>
+
+  <div class="box">
+    <h3>Spotify App</h3>
+    <div class="field">
+      <label>Client ID</label>
+      <input type="text" id="sp-client-id" placeholder="Your Spotify Client ID" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label>Redirect URI</label>
+      <input type="text" id="sp-redirect" placeholder="https://yourdomain.github.io/kindle-spotify/pair.html" autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>JSONBin</h3>
+    <div class="field">
+      <label>API Key</label>
+      <input type="text" id="jb-key" placeholder="$2a$10$..." autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="err" id="setup-err"></div>
+  <a id="spotify-auth-link" href="#" class="btn" style="opacity:0.4;pointer-events:none;" onclick="saveSetupAndAuth(event)">
+    Connect with Spotify →
+  </a>
+  <p class="note">Credentials saved in your browser only.</p>
+</div>
+
+<!-- ══ PAIRING SCREEN (code from URL) ══ -->
+<div id="screen-pairing" class="screen">
+  <div class="eyebrow">Kindle Spotify</div>
+  <div class="title">Pairing with<br/>your Kindle</div>
+  <div class="divider"></div>
+  <p class="sub">Your Kindle is showing this code. Logging in now…</p>
+  <div class="code-badge">
+    <div class="code-val" id="show-code">——</div>
+  </div>
+  <p class="sub" id="pairing-status">Connecting to Spotify…</p>
+  <div class="err" id="pair-err"></div>
+</div>
+
+<!-- ══ CONNECTED / CONTROLLER SCREEN ══ -->
+<div id="screen-connected" class="screen">
+  <div class="eyebrow">Kindle Spotify — Controller</div>
+
+  <div class="kindle-status">
+    <div class="ks-dot"></div>
+    <span class="ks-text">Kindle is connected &amp; displaying</span>
+  </div>
+
+  <div class="now-playing-card">
+    <div class="np-art" id="ph-art">♫</div>
+    <div class="np-info">
+      <div class="np-lbl">Now Playing</div>
+      <div class="np-name" id="ph-name">—</div>
+      <div class="np-artist" id="ph-artist">—</div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-bg"><div class="prog-fill" id="ph-prog" style="width:0%"></div></div>
+      <div class="prog-times">
+        <span class="prog-time" id="ph-cur">0:00</span>
+        <span class="prog-time" id="ph-tot">0:00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ctrl-row">
+    <button class="pb-btn" onclick="ctrl('prev')">
+      <svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+      <span class="pb-lbl">Prev</span>
+    </button>
+    <button class="pb-btn play-btn" id="ph-play-btn" onclick="ctrl('toggle')">
+      <svg id="ph-play-svg" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon id="ph-play-shape" points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
+      </svg>
+      <span class="pb-lbl" id="ph-play-lbl">Play</span>
+    </button>
+    <button class="pb-btn" onclick="ctrl('next')">
+      <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      <span class="pb-lbl">Next</span>
+    </button>
+  </div>
+
+  <div class="mode-row">
+    <button class="mode-btn" id="ph-shuffle" onclick="ctrl('shuffle')">
+      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+      Shuffle
+    </button>
+    <button class="mode-btn" id="ph-repeat" onclick="ctrl('repeat')">
+      <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <span id="ph-repeat-lbl">Repeat</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
+const SCOPES = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
+
+let CLIENT_ID = '';
+let REDIRECT_URI = '';
+let JSONBIN_KEY = '';
+let BIN_ID = '';
+let ACCESS_TOKEN = '';
+let REFRESH_TOKEN = '';
+let pairCode = '';
+let syncTimer = null;
+let progressTimer = null;
+let currentState = null;
+
+// ════════════════════════════════════════════════
+//  SETUP
+// ════════════════════════════════════════════════
+function loadSaved() {
+  CLIENT_ID    = localStorage.getItem('ph_client_id') || '';
+  REDIRECT_URI = localStorage.getItem('ph_redirect') || '';
+  JSONBIN_KEY  = localStorage.getItem('ph_jb_key') || '';
+  if (CLIENT_ID)    document.getElementById('sp-client-id').value = CLIENT_ID;
+  if (REDIRECT_URI) document.getElementById('sp-redirect').value  = REDIRECT_URI;
+  if (JSONBIN_KEY)  document.getElementById('jb-key').value       = JSONBIN_KEY;
+}
+
+function saveSetupAndAuth(e) {
+  e.preventDefault();
+  CLIENT_ID    = document.getElementById('sp-client-id').value.trim();
+  REDIRECT_URI = document.getElementById('sp-redirect').value.trim();
+  JSONBIN_KEY  = document.getElementById('jb-key').value.trim();
+
+  if (!CLIENT_ID || !REDIRECT_URI || !JSONBIN_KEY) {
+    document.getElementById('setup-err').textContent = 'Please fill in all fields.';
+    return;
+  }
+
+  localStorage.setItem('ph_client_id',   CLIENT_ID);
+  localStorage.setItem('ph_redirect',    REDIRECT_URI);
+  localStorage.setItem('ph_jb_key',      JSONBIN_KEY);
+
+  // Preserve pair code in redirect
+  const code = new URLSearchParams(window.location.search).get('code') ||
+               localStorage.getItem('ph_pair_code') || '';
+  const state = code; // use state param to pass pair code through OAuth
+
+  const params = new URLSearchParams({
+    client_id:     CLIENT_ID,
+    response_type: 'code',
+    redirect_uri:  REDIRECT_URI,
+    scope:         SCOPES,
+    state:         state,
+  });
+
+  window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+// ════════════════════════════════════════════════
+//  PKCE TOKEN EXCHANGE
+// ════════════════════════════════════════════════
+async function exchangeCode(code) {
+  // We're using standard auth code flow without PKCE here (simpler for phone)
+  // Spotify requires client secret for this — we'll use PKCE instead
+  const verifier = localStorage.getItem('ph_verifier');
+
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'authorization_code',
+      code,
+      redirect_uri:  REDIRECT_URI,
+      client_id:     CLIENT_ID,
+      code_verifier: verifier || '',
+    })
+  });
+
+  const data = await res.json();
+  if (data.access_token) {
+    ACCESS_TOKEN  = data.access_token;
+    REFRESH_TOKEN = data.refresh_token || '';
+    localStorage.setItem('ph_access',  ACCESS_TOKEN);
+    localStorage.setItem('ph_refresh', REFRESH_TOKEN);
+    return true;
+  }
+  return false;
+}
+
+async function refreshAccess() {
+  const rt = REFRESH_TOKEN || localStorage.getItem('ph_refresh');
+  if (!rt) return false;
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'refresh_token',
+      refresh_token: rt,
+      client_id:     CLIENT_ID,
+    })
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    ACCESS_TOKEN = data.access_token;
+    localStorage.setItem('ph_access', ACCESS_TOKEN);
+    return true;
+  }
+  return false;
+}
+
+// ════════════════════════════════════════════════
+//  SPOTIFY API
+// ════════════════════════════════════════════════
+async function spFetch(path, method = 'GET', body = null) {
+  if (!ACCESS_TOKEN) ACCESS_TOKEN = localStorage.getItem('ph_access') || '';
+  const opts = { method, headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } };
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  let res = await fetch('https://api.spotify.com/v1' + path, opts);
+  if (res.status === 401) {
+    const ok = await refreshAccess();
+    if (!ok) return null;
+    opts.headers.Authorization = 'Bearer ' + ACCESS_TOKEN;
+    res = await fetch('https://api.spotify.com/v1' + path, opts);
+  }
+  if (res.status === 204 || res.status === 202) return {};
+  try { return await res.json(); } catch { return null; }
+}
+
+async function getPlaybackState() {
+  return await spFetch('/me/player');
+}
+
+// ════════════════════════════════════════════════
+//  JSONBIN
+// ════════════════════════════════════════════════
+async function jbRead() {
+  try {
+    const res = await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
+    const json = await res.json();
+    return json.record || null;
+  } catch { return null; }
+}
+
+async function jbWrite(data) {
+  await fetch(`${JSONBIN_BASE}/b/${BIN_ID}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+    body: JSON.stringify(data)
+  });
+}
+
+// ════════════════════════════════════════════════
+//  SYNC LOOP
+// ════════════════════════════════════════════════
+async function syncToKindle() {
+  const sp = await getPlaybackState();
+  if (!sp || !sp.item) return;
+
+  // Check for pending command from Kindle
+  const bin = await jbRead();
+  if (bin?.cmd) {
+    await handleCmd(bin.cmd);
+    // Clear the command
+    await jbWrite({ ...bin, cmd: null });
+  }
+
+  const track = sp.item;
+  const state = {
+    paired:    true,
+    pairCode,
+    cmd:       null,
+    state: {
+      isPlaying: sp.is_playing,
+      shuffle:   sp.shuffle_state,
+      repeat:    sp.repeat_state,
+      progress:  sp.progress_ms,
+      device:    sp.device?.name || '',
+      track: {
+        name:     track.name,
+        artist:   track.artists?.map(a => a.name).join(', ') || '',
+        album:    track.album?.name || '',
+        art:      track.album?.images?.[0]?.url || '',
+        duration: track.duration_ms,
+      }
+    }
+  };
+
+  await jbWrite(state);
+  currentState = state.state;
+  renderPhone(state.state);
+}
+
+async function handleCmd(cmd) {
+  switch(cmd) {
+    case 'toggle':
+      if (currentState?.isPlaying) await spFetch('/me/player/pause', 'PUT');
+      else await spFetch('/me/player/play', 'PUT');
+      break;
+    case 'next': await spFetch('/me/player/next', 'POST'); break;
+    case 'prev':
+      if ((currentState?.progress || 0) > 3000) await spFetch('/me/player/seek?position_ms=0', 'PUT');
+      else await spFetch('/me/player/previous', 'POST');
+      break;
+    case 'shuffle':
+      await spFetch(`/me/player/shuffle?state=${!currentState?.shuffle}`, 'PUT'); break;
+    case 'repeat':
+      const modes = ['off','context','track'];
+      const next  = modes[(modes.indexOf(currentState?.repeat || 'off') + 1) % 3];
+      await spFetch(`/me/player/repeat?state=${next}`, 'PUT'); break;
+  }
+  setTimeout(syncToKindle, 500);
+}
+
+// ════════════════════════════════════════════════
+//  PHONE UI RENDER
+// ════════════════════════════════════════════════
+function renderPhone(s) {
+  if (!s?.track) return;
+  const t = s.track;
+
+  document.getElementById('ph-name').textContent   = t.name   || '—';
+  document.getElementById('ph-artist').textContent = t.artist || '—';
+
+  const artEl = document.getElementById('ph-art');
+  artEl.innerHTML = t.art ? `<img src="${t.art}" alt="" />` : '♫';
+
+  // Play/pause
+  const isPlaying = s.isPlaying;
+  const svg = document.getElementById('ph-play-svg');
+  svg.innerHTML = isPlaying
+    ? `<circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9" stroke="currentColor" stroke-width="2"/><line x1="14" y1="15" x2="14" y2="9" stroke="currentColor" stroke-width="2"/>`
+    : `<circle cx="12" cy="12" r="10"/><polygon id="ph-play-shape" points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>`;
+  document.getElementById('ph-play-lbl').textContent = isPlaying ? 'Pause' : 'Play';
+
+  document.getElementById('ph-shuffle').classList.toggle('on', !!s.shuffle);
+  const rb = document.getElementById('ph-repeat');
+  rb.classList.toggle('on', s.repeat !== 'off');
+  document.getElementById('ph-repeat-lbl').textContent =
+    s.repeat === 'track' ? 'Repeat 1' : s.repeat === 'context' ? 'Repeat All' : 'Repeat';
+
+  // Progress
+  clearInterval(progressTimer);
+  let ms = s.progress || 0;
+  const dur = t.duration || 0;
+  updatePhoneProgress(ms, dur);
+  if (isPlaying && dur) {
+    progressTimer = setInterval(() => {
+      ms += 1000;
+      if (ms >= dur) { clearInterval(progressTimer); return; }
+      updatePhoneProgress(ms, dur);
+    }, 1000);
+  }
+}
+
+function updatePhoneProgress(ms, dur) {
+  const pct = dur > 0 ? (ms / dur) * 100 : 0;
+  document.getElementById('ph-prog').style.width = pct + '%';
+  document.getElementById('ph-cur').textContent  = fmt(ms);
+  document.getElementById('ph-tot').textContent  = fmt(dur);
+}
+
+function fmt(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+async function ctrl(cmd) {
+  await handleCmd(cmd);
+}
+
+// ════════════════════════════════════════════════
+//  SCREEN
+// ════════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+window.addEventListener('load', async () => {
+  loadSaved();
+
+  const urlParams  = new URLSearchParams(window.location.search);
+  const spCode     = urlParams.get('code');   // Spotify auth code
+  const spError    = urlParams.get('error');
+  const stateParam = urlParams.get('state');  // pair code passed through OAuth state
+
+  // Grab pair code from URL ?code= param (pre-auth) or state param (post-auth)
+  const urlPairCode = new URLSearchParams(window.location.search).get('pairCode');
+  pairCode = urlPairCode || stateParam || localStorage.getItem('ph_pair_code') || '';
+  if (pairCode) {
+    localStorage.setItem('ph_pair_code', pairCode);
+    document.getElementById('show-code').textContent = pairCode;
+  }
+
+  BIN_ID      = localStorage.getItem('ph_bin_id')  || '';
+  ACCESS_TOKEN  = localStorage.getItem('ph_access')  || '';
+  REFRESH_TOKEN = localStorage.getItem('ph_refresh') || '';
+
+  // ── POST SPOTIFY AUTH CALLBACK ──
+  if (spCode && !spError) {
+    window.history.replaceState({}, '', window.location.pathname + (pairCode ? `?pairCode=${pairCode}` : ''));
+    show('pairing');
+    document.getElementById('pairing-status').textContent = 'Exchanging token…';
+
+    const ok = await exchangeCode(spCode);
+    if (!ok) {
+      document.getElementById('pair-err').textContent = 'Token exchange failed. Check your Client ID and Redirect URI.';
+      return;
+    }
+
+    // Find the bin by pair code
+    document.getElementById('pairing-status').textContent = 'Finding your Kindle…';
+    // Search bins for matching pair code
+    try {
+      const searchRes = await fetch(`${JSONBIN_BASE}/b?metadata=true`, {
+        headers: { 'X-Master-Key': JSONBIN_KEY }
+      });
+      const searchJson = await searchRes.json();
+      const bins = searchJson || [];
+      for (const b of bins) {
+        if (b.record?.pairCode === pairCode || b.snippetMeta?.name === 'kindle-spotify-' + pairCode) {
+          BIN_ID = b.metadata?.id || b._id;
+          break;
+        }
+      }
+    } catch(e) {
+      console.warn('Bin search failed, trying stored ID', e);
+      BIN_ID = localStorage.getItem('ph_bin_id') || '';
+    }
+
+    if (!BIN_ID) {
+      document.getElementById('pair-err').textContent = 'Could not find Kindle session. Make sure your Kindle is on the pairing screen.';
+      return;
+    }
+
+    localStorage.setItem('ph_bin_id', BIN_ID);
+    document.getElementById('pairing-status').textContent = 'Paired! Starting sync…';
+
+    await syncToKindle();
+    show('connected');
+    syncTimer = setInterval(syncToKindle, 5000);
+    return;
+  }
+
+  if (spError) {
+    document.getElementById('setup-err').textContent = 'Spotify denied: ' + spError;
+    show('setup');
+    return;
+  }
+
+  // ── RETURNING WITH EXISTING TOKEN ──
+  if (ACCESS_TOKEN && BIN_ID && pairCode) {
+    show('pairing');
+    document.getElementById('pairing-status').textContent = 'Reconnecting…';
+    await syncToKindle();
+    show('connected');
+    syncTimer = setInterval(syncToKindle, 5000);
+    return;
+  }
+
+  // ── FRESH OPEN WITH PAIR CODE ──
+  if (pairCode && (!CLIENT_ID || !JSONBIN_KEY)) {
+    show('setup');
+    // Pre-fill redirect URI with current page
+    document.getElementById('sp-redirect').value = window.location.origin + window.location.pathname;
+    return;
+  }
+
+  if (pairCode) {
+    show('setup');
+    return;
+  }
+
+  show('setup');
+});
+</script>
+</body>
+</html>
